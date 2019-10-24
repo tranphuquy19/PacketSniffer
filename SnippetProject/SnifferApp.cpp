@@ -91,13 +91,12 @@ typedef struct icmp_hdr
 	USHORT seq;
 } ICMP_HDR;
 
-typedef struct igmp_hdr
+typedef struct igmp_hdr //rfc2236
 {
 	BYTE type;
 	BYTE code;
 	USHORT checksum;
-	unsigned int id;
-	unsigned int access_key;
+	unsigned int ip; //multicast address
 } IGMP_HDR;
 
 FILE* logfile;
@@ -119,48 +118,49 @@ int main()
 	int in;
 
 	char hostname[100];
-	struct hostent* local;
+	struct hostent* local; //thong tin cua host hien tai
 	WSADATA wsa;
 
+	//Tao file log
 	logfile = fopen("log.txt", "w");
 	if (logfile == NULL)
 	{
 		printf("Unable to create file.");
 	}
 
-	//Initialise Winsock
-	printf("\nInitialising Winsock...");
+	//Khoi tao winsock
+	printf("\nKhoi Tao Winsock...");
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 	{
-		printf("WSAStartup() failed.\n");
+		printf("WSAStartup() that bai.\n");
 		return 1;
 	}
-	printf("Initialised");
+	printf("Khoi tao thanh cong");
 
-	//Create a RAW Socket
-	printf("\nCreating RAW Socket...");
+	//Tao raw socket
+	printf("\nTao RAW Socket...");
 	sniffer = socket(AF_INET, SOCK_RAW, IPPROTO_IP);
 	if (sniffer == INVALID_SOCKET)
 	{
-		printf("Failed to create raw socket: %d.\n", WSAGetLastError());
+		printf("Khong the tao raw socket, Ma loi: %d.\n", WSAGetLastError());
 		return 1;
 	}
-	printf("Created.");
+	printf("Tao xong!");
 
-	//Retrive the local hostname
+	//Lay hostname tren may
 	if (gethostname(hostname, sizeof(hostname)) == SOCKET_ERROR)
 	{
-		printf("Error : %d", WSAGetLastError());
+		printf("Loi! Ma loi: %d", WSAGetLastError());
 		return 1;
 	}
-	printf("\nHost name : %s \n", hostname);
+	printf("\nHostname : %s \n", hostname);
 
 	//Retrive the available IPs of the local host
 	local = gethostbyname(hostname);
-	printf("\nAvailable Network Interfaces : \n");
+	printf("\nNetwork Interfaces: \n");
 	if (local == NULL)
 	{
-		printf("Error : %d.\n", WSAGetLastError());
+		printf("Loi! Ma loi: %d.\n", WSAGetLastError());
 		return 1;
 	}
 
@@ -170,7 +170,7 @@ int main()
 		printf("Interface Number : %d Address : %s\n", i, inet_ntoa(addr));
 	}
 
-	printf("Enter the interface number you would like to sniff : ");
+	printf("Nhap Interface de sniff: ");
 	scanf("%d", &in);
 
 	memset(&dest, 0, sizeof(dest));
@@ -179,30 +179,27 @@ int main()
 	dest.sin_port = 0;
 
 	printf("\nBinding socket to local system and port 0 ...");
-	if (bind(sniffer, (struct sockaddr*) & dest, sizeof(dest)) == SOCKET_ERROR)
+	if (bind(sniffer, (struct sockaddr*) & dest, sizeof(dest)) == SOCKET_ERROR) /*cast sockaddr_in ve sockaddr thi 2byte dau la family socket(vd: AF_INET),
+		14bytes tiep theo cua sockadd.sa_data bao gom sin_port, sin_addr cua sockaddr_in */
 	{
 		printf("bind(%s) failed.\n", inet_ntoa(addr));
 		return 1;
 	}
 	printf("Binding successful");
 
-	//Enable this socket with the power to sniff : SIO_RCVALL is the key Receive ALL ;)
-
 	j = 1;
-	printf("\nSetting socket to sniff...");
+	printf("\nTuy chon bat toan bo goi tin (RAW SOCKET)");
 	if (WSAIoctl(sniffer, SIO_RCVALL, &j, sizeof(j), 0, 0, (LPDWORD)&in, 0, 0) == SOCKET_ERROR)
 	{
 		printf("WSAIoctl() failed.\n");
 		return 1;
 	}
-	printf("Socket set.");
 
 	//Begin
-	printf("\nStarted Sniffing\n");
+	printf("\nBat dau!\n");
 	printf("Packet Capture Statistics...\n");
-	StartSniffing(sniffer); //Happy Sniffing
+	StartSniffing(sniffer);
 
-	//End
 	closesocket(sniffer);
 	WSACleanup();
 
@@ -212,7 +209,7 @@ int main()
 
 void StartSniffing(SOCKET sniffer)
 {
-	char* Buffer = (char*)malloc(65536); //Its Big!
+	char* Buffer = (char*)malloc(65536);
 	int mangobyte;
 
 	if (Buffer == NULL)
@@ -223,8 +220,7 @@ void StartSniffing(SOCKET sniffer)
 
 	do
 	{
-		mangobyte = recvfrom(sniffer, Buffer, 65536, 0, 0, 0); //Eat as much as u can
-
+		mangobyte = recvfrom(sniffer, Buffer, 65536, 0, 0, 0); //size of packet recv (byte)
 		if (mangobyte > 0)
 		{
 			ProcessPacket(Buffer, mangobyte);
@@ -251,7 +247,7 @@ void ProcessPacket(char* Buffer, int Size)
 		break;
 
 	case 2: //IGMP Protocol
-	
+		PrintIgmpPacket(Buffer, Size);
 		++igmp;
 		break;
 
@@ -269,7 +265,7 @@ void ProcessPacket(char* Buffer, int Size)
 		++others;
 		break;
 	}
-	printf("TCP : %d UDP : %d ICMP : %d IGMP : %d Others : %d Total : %d\r", tcp, udp, icmp, igmp, others, total);
+	printf("TCP : %d \t UDP : %d \t ICMP : %d \t IGMP : %d \t Others : %d \t Total : %d\r", tcp, udp, icmp, igmp, others, total);
 }
 
 void PrintIpHeader(char* Buffer)
@@ -421,7 +417,7 @@ void PrintIcmpPacket(char* Buffer, int Size)
 	fprintf(logfile, "IP Header\n");
 	PrintData(Buffer, iphdrlen);
 
-	fprintf(logfile, "UDP Header\n");
+	fprintf(logfile, "ICMP Header\n");
 	PrintData(Buffer + iphdrlen, sizeof(ICMP_HDR));
 
 	fprintf(logfile, "Data Payload\n");
@@ -445,44 +441,59 @@ void PrintIgmpPacket(char* Buffer, int Size) {
 
 	fprintf(logfile, "IGMP Header\n");
 	fprintf(logfile, " |-Type : %d", (unsigned int)(igmpheader->type));
+	fprintf(logfile, " |-Code : %d\n", (unsigned int)(igmpheader->code));
+	fprintf(logfile, " |-Checksum : %d\n", ntohs(igmpheader->checksum));
+	fprintf(logfile, " |-ID : %d\n", ntohs(igmpheader->ip));
+	fprintf(logfile, "\n");
 
+	fprintf(logfile, "IP Header \n");
+	PrintData(Buffer, iphdrlen);
+
+	fprintf(logfile, "IGMP Header\n");
+	PrintData(Buffer + iphdrlen, sizeof(IGMP_HDR));
+
+	fprintf(logfile, "Data payload\n");
+	PrintData(Buffer + iphdrlen + sizeof(IGMP_HDR), (Size - sizeof(IGMP_HDR) - iphdr->ip_header_len * 4));
+	
+	fprintf(logfile, "\n###########################################################");
 }
 
 /*
-	Print the hex values of the data
+	Xuat payload cua goi tin dang hexa || va ep kieu sang dang char
 */
 void PrintData(char* data, int Size)
 {
 	char a, line[17], c;
 	int j;
 
-	//loop over each character and print
+	//duyet tung byte trong payload cua goi tin
 	for (i = 0; i < Size; i++)
 	{
 		c = data[i];
 
-		//Print the hex value for every character , with a space. Important to make unsigned
+		//Gia tri kieu char cua char c;(1byte)
 		fprintf(logfile, " %.2x", (unsigned char)c);
 
-		//Add the character to data line. Important to make unsigned
+		//Khong bieu dien duoc dang ki tu chuyen sang '.'
 		a = (c >= 32 && c <= 128) ? (unsigned char)c : '.';
 
 		line[i % 16] = a;
 
-		//if last character of a line , then print the line - 16 characters in 1 line
+		//1 line = 16hex - 10space - 16char
 		if ((i != 0 && (i + 1) % 16 == 0) || i == Size - 1)
 		{
 			line[i % 16 + 1] = '\0';
 
-			//print a big gap of 10 characters between hex and characters
+			//10 khoang trang canh le cho 16(char)payload
 			fprintf(logfile, "          ");
 
-			//Print additional spaces for last lines which might be less than 16 characters in length
+			//append cho du ky tu cua 1 dong
 			for (j = strlen(line); j < 16; j++)
 			{
 				fprintf(logfile, "   ");
 			}
 
+			//in gia tri cua 16(char)payload++
 			fprintf(logfile, "%s \n", line);
 		}
 	}
