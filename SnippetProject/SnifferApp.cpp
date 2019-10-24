@@ -104,7 +104,6 @@ int tcp = 0, udp = 0, icmp = 0, others = 0, igmp = 0, total = 0, i, j;
 struct sockaddr_in source, dest;
 char hex[2];
 
-//Its free!
 IPV4_HDR* iphdr;
 TCP_HDR* tcpheader;
 UDP_HDR* udpheader;
@@ -179,8 +178,11 @@ int main()
 	dest.sin_port = 0;
 
 	printf("\nBinding socket to local system and port 0 ...");
-	if (bind(sniffer, (struct sockaddr*) & dest, sizeof(dest)) == SOCKET_ERROR) /*cast sockaddr_in ve sockaddr thi 2byte dau la family socket(vd: AF_INET),
-		14bytes tiep theo cua sockadd.sa_data bao gom sin_port, sin_addr cua sockaddr_in */
+	if (bind(sniffer, (struct sockaddr*) & dest, sizeof(dest)) == SOCKET_ERROR) 
+		/*cast sockaddr_in ve sockaddr thi 2byte dau la family socket(vd: AF_INET),
+		14bytes tiep theo cua sockadd.sa_data bao gom sin_port, sin_addr cua sockaddr_in
+		Socket lang nghe tren IP, va PORT
+		*/
 	{
 		printf("bind(%s) failed.\n", inet_ntoa(addr));
 		return 1;
@@ -261,7 +263,7 @@ void ProcessPacket(char* Buffer, int Size)
 		PrintUdpPacket(Buffer, Size);
 		break;
 
-	default: //Some Other Protocol like ARP etc.
+	default:
 		++others;
 		break;
 	}
