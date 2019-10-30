@@ -5,13 +5,13 @@
 #include "conio.h"
 #include "winsock2.h"
 
-#pragma comment(lib,"ws2_32.lib") //For winsock
+#pragma comment(lib,"ws2_32.lib")
 
 #define SIO_RCVALL _WSAIOW(IOC_VENDOR,1) //this removes the need of mstcpip.h
 
-void StartSniffing(SOCKET Sock); //This will sniff here and there
+void StartSniffing(SOCKET Sock);
 
-void ProcessPacket(char*, int); //This will decide how to digest
+void ProcessPacket(char*, int);
 void PrintIpHeader(char*);
 void PrintIcmpPacket(char*, int);
 void PrintIgmpPacket(char*, int);
@@ -44,13 +44,12 @@ typedef struct ip_hdr
 
 typedef struct udp_hdr
 {
-	unsigned short source_port; // Source port no.
-	unsigned short dest_port; // Dest. port no.
-	unsigned short udp_length; // Udp packet length
-	unsigned short udp_checksum; // Udp checksum (optional)
+	unsigned short source_port; 
+	unsigned short dest_port; 
+	unsigned short udp_length; 
+	unsigned short udp_checksum; 
 } UDP_HDR;
 
-// TCP header
 typedef struct tcp_header
 {
 	unsigned short source_port; // source port
@@ -75,17 +74,16 @@ typedef struct tcp_header
 	unsigned char ecn : 1; //ECN-Echo Flag
 	unsigned char cwr : 1; //Congestion Window Reduced Flag
 
-	////////////////////////////////
 
-	unsigned short window; // window
-	unsigned short checksum; // checksum
-	unsigned short urgent_pointer; // urgent pointer
+	unsigned short window; 
+	unsigned short checksum; 
+	unsigned short urgent_pointer; 
 } TCP_HDR;
 
 typedef struct icmp_hdr
 {
-	BYTE type; // ICMP Error type
-	BYTE code; // Type sub code
+	BYTE type;
+	BYTE code; 
 	USHORT checksum;
 	USHORT id;
 	USHORT seq;
