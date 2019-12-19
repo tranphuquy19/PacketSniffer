@@ -182,22 +182,21 @@ int main()
 		Socket lang nghe tren IP, va PORT
 		*/
 	{
-		printf("bind(%s) failed.\n", inet_ntoa(addr));
+		printf("bind(%s) that bai.\n", inet_ntoa(addr));
 		return 1;
 	}
-	printf("Binding successful");
+	printf("Binding thanh cong");
 
 	j = 1;
 	printf("\nTuy chon bat toan bo goi tin (RAW SOCKET)");
 	if (WSAIoctl(sniffer, SIO_RCVALL, &j, sizeof(j), 0, 0, (LPDWORD)&in, 0, 0) == SOCKET_ERROR)
 	{
-		printf("WSAIoctl() failed.\n");
+		printf("WSAIoctl() that bai.\n");
 		return 1;
 	}
 
 	//Begin
 	printf("\nBat dau!\n");
-	printf("Packet Capture Statistics...\n");
 	StartSniffing(sniffer);
 
 	closesocket(sniffer);
